@@ -38,28 +38,37 @@ while(ret):
             y = int(M['m01']/M['m00'])
             validPoints = []
             for pt in cnt:
-                if(pt[0][1] > y):
-                    validPoints.append(pt)
+                # if(pt[0][1] < y):
+                validPoints.append(pt)
 
             validPoints = np.asarray(validPoints)
-            dist = np.empty(validPoints.shape[0])
-            print(validPoints.shape)
+            dist = np.empty(0)
+            # print(validPoints.shape[0])
             for point in validPoints:
                 # dist = np.append(dist, math.sqrt(((point[0][0]-x)**2)+(point[0][1]-y)**2))
-                dist = np.append(dist, math.sqrt(((point[0][1]-y)**2)))
+                dist = np.append(dist, math.sqrt(((point[0][1]-box.shape[1])**2)))
 
+            # x = [cv2.contourArea(c) for c in contours]
+            # max_index = np.argmax(areas)
+            # cnt = contours[max_index]
+            # print(dist.shape[0])
             maxima, _ = find_peaks(dist)
-            print(maxima.shape)
+            # cv2.circle(box, (x, y), 6, (0, 0, 255), thickness = -1)
+            # print(np.amax(maxima))
+            # print("n")
             # for ind in maxima:
-            #     cv2.circle(box, (validPoints[ind][0][0], validPoints[ind][0][1]), 5, (255, 0, 0))
-            # if(maxima.shape[0] == 5):
-            #     for ind in maxima:
-            #         cv2.circle(box, validPoints[0][0][ind], 5, (255, 0, 0))
+            #     cv2.circle(box, (validPoints[ind][0][0], validPoints[ind][0][1]), 6, (255, 0, 0), thickness = -1)
+            if(maxima.shape[0] == 4):
+                for ind in maxima:
+                    cv2.circle(box, (validPoints[ind][0][0], validPoints[ind][0][1]), 6, (255, 0, 0), thickness = -1)
+
+                cv2.imshow('test', box)
+                cv2.waitKey(0)
 
     skin = cv2.bitwise_and(box, box, mask = fgMask)
     cv2.rectangle(frame, (760, 50), (1080, 410), (0, 255, 0), 2)
     cv2.imshow('original', frame)
-    # cv2.imshow('test', box)
+    cv2.imshow('test', box)
     if(cv2.waitKey(1) == ord('q')):
         break
     ret, frame = cap.read()
