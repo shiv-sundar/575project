@@ -1,17 +1,16 @@
 import cv2
 import numpy as np
-#can I find the skin first, then check what is frequently moving
-#
-# image = cv2.imread("asl-alphabet/asl_alphabet_train/asl_alphabet_train/A/A1.jpg", cv2.IMREAD_GRAYSCALE)
-cap = cv2.VideoCapture(0)
-ret, frame = cap.read()
+import math
+from scipy.signal import find_peaks
+
 def nothing(x):
     pass
 
-for i in range(1, 15):
-    #allow some time for the camera to do its thing
-    ret, frame = cap.read()
+# def checkFingers(frame):
+#
 
+cap = cv2.VideoCapture(0)
+ret, frame = cap.read()
 edges = cv2.namedWindow('edges')
 lower = np.array([0, 40, 0], dtype = "uint8")
 upper = np.array([15, 255, 255], dtype = "uint8")
@@ -29,19 +28,38 @@ while(ret):
     if(contours):
         areas = [cv2.contourArea(c) for c in contours]
         max_index = np.argmax(areas)
-        cnt=contours[max_index]
+        cnt = contours[max_index]
         cv2.drawContours(box, contours, -1, (0, 0, 255), 2)
+        if (cv2.contourArea(cnt) > 15000):
+        # if (cv2.contourArea(cnt) < 1000):
+            cnt = np.asarray(cnt)
+            M = cv2.moments(cnt)
+            x = int(M['m10']/M['m00'])
+            y = int(M['m01']/M['m00'])
+            validPoints = []
+            for pt in cnt:
+                if(pt[0][1] > y):
+                    validPoints.append(pt)
+
+            validPoints = np.asarray(validPoints)
+            dist = np.empty(validPoints.shape[0])
+            print(validPoints.shape)
+            for point in validPoints:
+                # dist = np.append(dist, math.sqrt(((point[0][0]-x)**2)+(point[0][1]-y)**2))
+                dist = np.append(dist, math.sqrt(((point[0][1]-y)**2)))
+
+            maxima, _ = find_peaks(dist)
+            print(maxima.shape)
+            # for ind in maxima:
+            #     cv2.circle(box, (validPoints[ind][0][0], validPoints[ind][0][1]), 5, (255, 0, 0))
+            # if(maxima.shape[0] == 5):
+            #     for ind in maxima:
+            #         cv2.circle(box, validPoints[0][0][ind], 5, (255, 0, 0))
 
     skin = cv2.bitwise_and(box, box, mask = fgMask)
     cv2.rectangle(frame, (760, 50), (1080, 410), (0, 255, 0), 2)
     cv2.imshow('original', frame)
+    # cv2.imshow('test', box)
     if(cv2.waitKey(1) == ord('q')):
         break
     ret, frame = cap.read()
-
-# plt.subplot(121), plt.imshow(image, cmap = 'gray')
-# plt.title('Original Image'), plt.xticks([]), plt.yticks([])
-# plt.subplot(122), plt.imshow(edges, cmap = 'gray')
-# plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
-#
-# plt.show()
