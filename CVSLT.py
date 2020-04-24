@@ -121,19 +121,26 @@ while(ret):
                 for point in cntTop:
                     angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
                     deg = np.append(deg, angle)
-                    if (point[0][1] > y + 30):
-                        dist = np.append(dist, 0)
-                        continue
+                    # if (point[0][1] > y + 30):
+                    #     dist = np.append(dist, 0)
+                    #     continue
                     # distance = math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2)
                     dist = np.append(dist, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
 
                 # fingers = []
                 #open
-                # maxima, dict = find_peaks(dist, height=30, distance=5, prominence=30)
-                # print(len(maxima))
+                maxO, _ = find_peaks(dist, height=30, distance=5, prominence=30)
+                if(len(maxO) > 4):
+                    continue
+
+                print(len(maxO))
                 #closed
-                maxima, dict = find_peaks(dist, prominence=(5, 25))
-                print(len(maxima))
+                maxC, _ = find_peaks(dist, prominence=(5, 25))
+                if (len(maxC) > 4):
+                    continue
+
+                # print(len(maxC))
+
                 # maxima = argrelmax(dist, order = 25)
                 # prominence = peak_prominences(dist, maxima[0])
 
