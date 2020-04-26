@@ -105,12 +105,13 @@ while(ret):
             max_index = np.argmax(areas)
             cnt = contours[max_index]
             area = cv2.contourArea(cnt)
+            cv2.drawContours(box, [cnt], 0, (0, 0, 255), 2)
             if((area > 20000) & (area < 55000)):
                 M = cv2.moments(cnt)
                 x = int(M['m10']/M['m00'])
                 y = int(M['m01']/M['m00'])
                 cv2.circle(box, (x, y), 3, (0, 0, 255), -1)
-                cv2.drawContours(box, [cnt], 0, (0, 0, 255), 2)
+
                 if ((x < 150) | (x > 200) | (y < 225) | (y > 275)):
                     cv2.putText(frame, "Try to match the red dot to the blue dot", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness = 2)
                     continue
@@ -119,31 +120,43 @@ while(ret):
                 deg = np.zeros(0)
                 dist = np.zeros(0)
                 for point in cntTop:
-                    angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
-                    deg = np.append(deg, angle)
-                    # if (point[0][1] > y + 30):
-                    #     dist = np.append(dist, 0)
-                    #     continue
+                    # angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
+                    # deg = np.append(deg, angle)
+                    # if ((angle > -135) & (angle <= -90)):
+                    #     dist = np.append(dist, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
+                    # #     continue
+                    #
+                    # else if ((angle < 0))
                     # distance = math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2)
                     dist = np.append(dist, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
 
-                # fingers = []
-                #open
+                #openTop
                 maxO, _ = find_peaks(dist, height=30, distance=5, prominence=30)
                 if(len(maxO) > 4):
                     continue
 
-                print(len(maxO))
-                #closed
-                maxC, _ = find_peaks(dist, prominence=(5, 25))
-                if (len(maxC) > 4):
+                #closedTop
+                maxC, _ = find_peaks(dist, prominence=(2, 9))
+                if (len(maxC) != 4 - len(maxO)):
                     continue
 
-                # print(len(maxC))
+                # print("Open fingers: " + str(len(maxO)))
+                # print("Closed fingers: " + str(len(maxC)))
 
-                # maxima = argrelmax(dist, order = 25)
-                # prominence = peak_prominences(dist, maxima[0])
+                maxima = argrelmax(dist, order = 25)
+                prominence = peak_prominences(dist, maxima[0])
 
+                # thumb
+                cntThumb = cnt.copy()
+                distT = np.zeros(0)
+                for point in cntThumb:
+                    angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
+                    if ((angle > 135) | (angle < -135)):
+                        distT = np.append(distT, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
+
+                maxT, _ = find_peaks(distT, height=120, prominence=20, width=20)
+                # print("Thumb open: " + str(len(maxT)))
+                print(len(maxO) + len(maxT))
                 #define states here
             elif(area >= 55000):
                 cv2.putText(frame, "Hand is too close", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness = 2)
