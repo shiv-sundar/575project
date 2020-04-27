@@ -64,10 +64,15 @@ while(ret):
                 """Check open hand letters"""
                 # letters: B, C, D, F, K, L, R, U, V, W, Y
                 cntTop = cnt2.copy()
-                distTop = getDist(cntTop)
+                distTop = np.zeros(0)
+                for point in cntTop:
+                    if (point[0][1] < 350):
+                        distTop = np.append(distTop, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
+
+                # distTop = getDist(cntTop)
 
                 #openTop
-                maxO, dict = find_peaks(distTop, height=125, prominence=30, width=(None, None))
+                maxO, dict = find_peaks(distTop, height=125, prominence=40, width=(None, None))
                 if(len(maxO) > 5):
                     continue
 
@@ -86,21 +91,42 @@ while(ret):
                     if ((angle > 135) | (angle < -135)):
                         distT = np.append(distT, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
 
-                maxT, _ = find_peaks(distT, height=120, prominence=20, width=20)
-
+                maxT, _ = find_peaks(distT, height=100, prominence=20, width=20)
+                cv2.putText(frame, "Thumb is " + str(len(maxT)) + " and " + str(len(maxO)) + " fingers open", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness = 2)
                 """Finding states here"""
-                if ((len(maxO) == 1) & (len(maxT) == 0)):
-                    print("D")
-                    continue
+                for x in range(1): """Make sure to take out this for loop"""
+                    if ((len(maxO) == 1) & (len(maxT) == 0)):
+                        if (dict["widths"] < 70):
+                            if (maxO[0] < 185):
+                                print("D")
+                                continue
 
-                if (len(maxO) == 2):
-                    if ((cnt2[maxO[0]][0][0] < box.shape[0]/2) &(cnt2[maxO[1]][0][0] < box.shape[0]/2) & (len(maxT) == 0)):
-                        print("V")
-                        continue
+                            if (maxO[0] >= 185):
+                                print("I")
+                                continue
 
-                    if ((maxO[0] < cnt.shape[0]/2) & (len(maxT) == 1)):
+                        if (dict["widths"] >= 70):
+                            print("B")
+                            continue
+
+                    if ((len(maxO) == 2) & (len(maxT) == 1)):
                         print("L")
                         continue
+
+                    if ((len(maxO) == 2) & (len(maxT) == 0)):
+                        if ((cnt2[maxO[0]][0][0] < box.shape[0]/2) &(cnt2[maxO[1]][0][0] < box.shape[0]/2) & (len(maxT) == 0)):
+                            print("V")
+                            continue
+
+                    if ((len(maxO) == 3) & (len(maxT) == 0)):
+                        print("F")
+                        continue
+
+                    if ((len(maxO) == 4)):
+                        print("idiot")
+
+                plt.plot(distTop)
+                plt.show()
 
             elif(area >= 55000):
                 cv2.putText(frame, "Hand is too close", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness = 2)
