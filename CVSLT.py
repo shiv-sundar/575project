@@ -59,18 +59,24 @@ while(ret):
                 cnt2 = cnt[first:0:-1].copy()
                 cnt2 = np.append(cnt2, cnt[cnt.shape[0] - 1:first:-1, :, :].copy(), axis=0)
                 """Check hand closed first"""
-                # this is letters: A, E, M, N, O, P, Q, S, T
+                # this is letters: A, E, M, N, O, Q, S, T
 
                 """Check open hand letters"""
-                # letters: B, C, D, F, K, L, R, U, V, W, Y
+                # letters: B, C, D, F, K, L, R, U, V, W, X, Y
+
+                """Still missing: G, H, I, J, P, Q, Z"""
+                #this will likely be internal contours
+
                 cntTop = cnt2.copy()
                 distTop = np.zeros(0)
                 for point in cntTop:
-                    if (point[0][1] < 350):
+                    if (point[0][1] < 350): #these points aren't important usually, actually breaks code if left in
                         distTop = np.append(distTop, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
 
                 # distTop = getDist(cntTop)
 
+                # plt.plot(distTop)
+                # plt.show()
                 #openTop
                 maxO, dict = find_peaks(distTop, height=125, prominence=40, width=(None, None))
                 if(len(maxO) > 5):
@@ -94,7 +100,7 @@ while(ret):
                 maxT, _ = find_peaks(distT, height=100, prominence=20, width=20)
                 cv2.putText(frame, "Thumb is " + str(len(maxT)) + " and " + str(len(maxO)) + " fingers open", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), thickness = 2)
                 """Finding states here"""
-                for x in range(1): """Make sure to take out this for loop"""
+                for x in range(1): #Make sure to take out this for loop
                     if ((len(maxO) == 1) & (len(maxT) == 0)):
                         if (dict["widths"] < 70):
                             if (maxO[0] < 185):
@@ -106,27 +112,44 @@ while(ret):
                                 continue
 
                         if (dict["widths"] >= 70):
-                            print("B")
-                            continue
+                            # print(dict)
+                            #U needs to go somewhere in here, potentially R
+                            if (cntTop[dict["right_bases"][0], 0, 0] - cntTop[dict["left_bases"][0], 0, 0] > 100):
+                                print("B")
+                                continue
+
+                            else:
+                                print("UR")
+                                continue
 
                     if ((len(maxO) == 2) & (len(maxT) == 1)):
+                        #X and Y may go in here, skip X for now
                         print("L")
                         continue
 
                     if ((len(maxO) == 2) & (len(maxT) == 0)):
-                        if ((cnt2[maxO[0]][0][0] < box.shape[0]/2) &(cnt2[maxO[1]][0][0] < box.shape[0]/2) & (len(maxT) == 0)):
+                        if ((distTop[dict["right_bases"][0]] - distTop[dict["left_bases"][0]] < 5) & (distTop[dict["left_bases"][1]] - distTop[dict["right_bases"][1]] < 5)):
                             print("V")
                             continue
 
+                        else:
+                            print("K")
+                            continue
+
                     if ((len(maxO) == 3) & (len(maxT) == 0)):
-                        print("F")
-                        continue
+                        if (dict["left_bases"][0] < 75):
+                            print("W")
+                            continue
+
+                        else:
+                            print("F")
+                            continue
 
                     if ((len(maxO) == 4)):
                         print("idiot")
 
-                plt.plot(distTop)
-                plt.show()
+                # plt.plot(distTop)
+                # plt.show()
 
             elif(area >= 55000):
                 cv2.putText(frame, "Hand is too close", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness = 2)
