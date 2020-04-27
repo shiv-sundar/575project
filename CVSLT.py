@@ -6,91 +6,31 @@ from scipy.signal import argrelmax, peak_prominences, find_peaks
 
 def checkHandClosed(cntData, centerX, centerY):
 
+    # if (cntData[0][1])
     """Use distance from center to top of contour,
     if relatively small, then hand closed"""
 
-def countFingers(cntData, fingerLocation, centerX, centerY):
-    #work on returning array like [[finger1, closed], [finger2, open], [finger3, open]]
+def getAngles(cnt):
     deg = np.zeros(0)
+    for point in cnt:
+        angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
+        deg = np.append(deg, angle)
+
+    return deg
+
+def getDist(cnt):
     dist = np.zeros(0)
-    if(fingerLocation == "t"):
-        for point in cntData:
-            angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
-            deg = np.append(deg, angle)
-            if (point[0][1] > centerY + 30):
-                dist = np.append(dist, 0)
-                continue
-            distance = math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2)
-            dist = np.append(dist, distance)
+    for point in cnt:
+        dist = np.append(dist, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
 
-        #open
-        maxima, dict = find_peaks(dist, height=20, distance=5, prominence=35)
-        # maxima = argrelmax(dist, order = 25)
-        # prominence = peak_prominences(dist, maxima[0])
-        fingers = []
-
-        # for finger in range(len(maxima[0])):
-        #     if(prominence[0][finger] < 35):
-        #         type = "closed"
-        #
-        #     else:
-        #         type = "open"
-        #
-        #     fingers.append([finger, type])
-
-        if (cv2.waitKey(1) == ord("w")):
-            print(maxima)
-        # return fingers
-
-    elif(fingerLocation == "i"):
-        """Todo: need to do internal contour detection"""
-        # for point in cntData:
-        #     if (point[0][1] > 330):
-        #         dist = np.append(dist, 0)
-        #         continue
-        #     angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
-        #     deg = np.append(deg, angle)
-        #     distance = math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2)
-        #     dist = np.append(dist, distance)
-        # maxima = argrelmax(dist, order = 25)
-        return None
-
-    elif(fingerLocation == "b"):
-        """Todo work on finding fingers on the bottom"""
-
-    elif(fingerLocation == "l"):
-        for point in cntData:
-            angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
-            deg = np.append(deg, angle)
-            if (point[0][0] > centerX + 30):
-                dist = np.append(dist, 0)
-                continue
-            distance = math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2)
-            dist = np.append(dist, distance)
-        maxima = argrelmax(dist, order = 25)
-        prominence = peak_prominences(dist, maxima[0])
-        fingers = []
-        for finger in range(len(maxima[0])):
-            if(prominence[0][finger] < 35):
-                type = "closed"
-
-            else:
-                type = "open"
-
-            fingers.append([finger, type])
-
-        if (cv2.waitKey(1) == ord("w")):
-            print(fingers)
-        return fingers
-
-    return None
+    return dist
 
 cap = cv2.VideoCapture(0)
 ret, frame = cap.read()
 backSub = cv2.createBackgroundSubtractorKNN()
 while(ret):
     frame = cv2.flip(frame, 1)
-    box = frame[50:450, 760:1110, :]
+    box = frame[50:450, 710:1110, :]
     t = box.copy()
     t = cv2.cvtColor(t, cv2.COLOR_BGR2HSV)
     fgMask = backSub.apply(t)
@@ -99,7 +39,7 @@ while(ret):
     fgMask = cv2.erode(fgMask, kernel, iterations = 2)
     hand = cv2.dilate(fgMask, kernel, iterations = 2)
     _, contours, _ = cv2.findContours(hand.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for x in range(1): #I'm sorry this is bad but I just need to break out at a specific point still in the loop
+    for x in range(1): #I'm sorry, this is bad, but I just need to break out at a specific point still in the loop
         if(contours):
             areas = [cv2.contourArea(c) for c in contours]
             max_index = np.argmax(areas)
@@ -111,61 +51,65 @@ while(ret):
                 x = int(M['m10']/M['m00'])
                 y = int(M['m01']/M['m00'])
                 cv2.circle(box, (x, y), 3, (0, 0, 255), -1)
-
-                if ((x < 150) | (x > 200) | (y < 225) | (y > 275)):
+                if ((x < 175) | (x > 225) | (y < 225) | (y > 275)):
                     cv2.putText(frame, "Try to match the red dot to the blue dot", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness = 2)
                     continue
 
-                cntTop = cnt.copy()
-                deg = np.zeros(0)
-                dist = np.zeros(0)
-                for point in cntTop:
-                    # angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
-                    # deg = np.append(deg, angle)
-                    # if ((angle > -135) & (angle <= -90)):
-                    #     dist = np.append(dist, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
-                    # #     continue
-                    #
-                    # else if ((angle < 0))
-                    # distance = math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2)
-                    dist = np.append(dist, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
+                first = np.argmax(cnt[:, :, 1]> 395)
+                cnt2 = cnt[first:0:-1].copy()
+                cnt2 = np.append(cnt2, cnt[cnt.shape[0] - 1:first:-1, :, :].copy(), axis=0)
+                """Check hand closed first"""
+                # this is letters: A, E, M, N, O, P, Q, S, T
+
+                """Check open hand letters"""
+                # letters: B, C, D, F, K, L, R, U, V, W, Y
+                cntTop = cnt2.copy()
+                distTop = getDist(cntTop)
 
                 #openTop
-                maxO, _ = find_peaks(dist, height=30, distance=5, prominence=30)
-                if(len(maxO) > 4):
+                maxO, dict = find_peaks(distTop, height=125, prominence=30, width=(None, None))
+                if(len(maxO) > 5):
                     continue
 
                 #closedTop
-                maxC, _ = find_peaks(dist, prominence=(2, 9))
-                if (len(maxC) != 4 - len(maxO)):
+                maxC, _ = find_peaks(distTop, prominence=(2, 10))
+                if (len(maxC) != 5 - len(maxO)):
                     continue
-
-                # print("Open fingers: " + str(len(maxO)))
-                # print("Closed fingers: " + str(len(maxC)))
-
-                maxima = argrelmax(dist, order = 25)
-                prominence = peak_prominences(dist, maxima[0])
 
                 # thumb
                 cntThumb = cnt.copy()
                 distT = np.zeros(0)
+
+                #use custom angle measures
                 for point in cntThumb:
                     angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
                     if ((angle > 135) | (angle < -135)):
                         distT = np.append(distT, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
 
                 maxT, _ = find_peaks(distT, height=120, prominence=20, width=20)
-                # print("Thumb open: " + str(len(maxT)))
-                print(len(maxO) + len(maxT))
-                #define states here
+
+                """Finding states here"""
+                if ((len(maxO) == 1) & (len(maxT) == 0)):
+                    print("D")
+                    continue
+
+                if (len(maxO) == 2):
+                    if ((cnt2[maxO[0]][0][0] < box.shape[0]/2) &(cnt2[maxO[1]][0][0] < box.shape[0]/2) & (len(maxT) == 0)):
+                        print("V")
+                        continue
+
+                    if ((maxO[0] < cnt.shape[0]/2) & (len(maxT) == 1)):
+                        print("L")
+                        continue
+
             elif(area >= 55000):
                 cv2.putText(frame, "Hand is too close", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness = 2)
 
             elif(area > 10000):
                 cv2.putText(frame, "Hand is too far", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness = 2)
 
-    cv2.circle(box, (175, 250), 3, (255, 0, 0), -1)
-    cv2.rectangle(frame, (760, 50), (1110, 450), (0, 255, 0), 1)
+    cv2.circle(box, (200, 250), 3, (255, 0, 0), -1)
+    cv2.rectangle(frame, (710, 50), (1110, 450), (0, 255, 0), 1)
     cv2.imshow('original', frame)
     if(cv2.waitKey(1) == ord('q')):
         cap.release()
