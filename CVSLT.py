@@ -10,14 +10,6 @@ def checkHandClosed(cntData, centerX, centerY):
     """Use distance from center to top of contour,
     if relatively small, then hand closed"""
 
-def getAngles(cnt):
-    deg = np.zeros(0)
-    for point in cnt:
-        angle = math.degrees(math.atan2(point[0][1] - y, point[0][0] - x))
-        deg = np.append(deg, angle)
-
-    return deg
-
 def getDist(cnt):
     dist = np.zeros(0)
     for point in cnt:
@@ -73,13 +65,9 @@ while(ret):
                     if (point[0][1] < 350): #these points aren't important usually, actually breaks code if left in
                         distTop = np.append(distTop, math.sqrt(((point[0][0] - x)**2) + (point[0][1] - y)**2))
 
-                # distTop = getDist(cntTop)
-
-                # plt.plot(distTop)
-                # plt.show()
                 #openTop
                 maxO, dict = find_peaks(distTop, height=125, prominence=40, width=(None, None))
-                if(len(maxO) > 5):
+                if(len(maxO) > 5): #you have more than 5 fingers?
                     continue
 
                 #closedTop
@@ -112,14 +100,25 @@ while(ret):
                                 continue
 
                         if (dict["widths"] >= 70):
-                            # print(dict)
                             #U needs to go somewhere in here, potentially R
                             if (cntTop[dict["right_bases"][0], 0, 0] - cntTop[dict["left_bases"][0], 0, 0] > 100):
                                 print("B")
                                 continue
 
                             else:
-                                print("UR")
+                                maxTemp, _ = find_peaks(distTop[dict["left_bases"][0]:dict["right_bases"][0]], height=165, distance=15)
+                                cntTemp = cnt2[dict["left_bases"][0]:dict["right_bases"][0], :, :]
+                                # print(maxTemp)
+                                print(cntTemp[maxTemp[1], 0, 0])
+                                print(cntTemp[maxTemp[0], 0, 0])
+                                plt.plot(distTop[dict["left_bases"][0]:dict["right_bases"][0]])
+                                plt.show()
+                                # print(cntTemp[maxTemp[1], 0, 0] - cntTemp[maxTemp[0], 0, 0])
+                                # if ((len(maxTemp) == 2) & (cntTemp[maxTemp[1], 0, 0] - cntTemp[maxTemp[0], 0, 0] > 25)):
+                                #     print("R")
+                                #between left and right bases, pick new peaks higher than 175
+                                #X difference between 2 peaks may be higher for R
+                                # print("UR")
                                 continue
 
                     if ((len(maxO) == 2) & (len(maxT) == 1)):
@@ -145,12 +144,8 @@ while(ret):
                             print("F")
                             continue
 
-                    if ((len(maxO) == 4)):
-                        print("idiot")
-
                 # plt.plot(distTop)
                 # plt.show()
-
             elif(area >= 55000):
                 cv2.putText(frame, "Hand is too close", (0, 720), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), thickness = 2)
 
